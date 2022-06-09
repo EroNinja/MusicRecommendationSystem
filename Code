@@ -1,0 +1,61 @@
+#content based filtering
+library(dplyr)
+df=data.frame(dataset)
+udf=data.frame(User_dataset)
+gen=readline("Enter Genre: ")
+
+dfs=subset(df,genre==gen)
+dfsh=dfs[order(dfs$song.hotness,  decreasing = TRUE),]
+dfsr=dfsh%>%slice(1:7)
+dfsr=dfsr[order(dfsr$song.ratings, decreasing= TRUE),]
+dfsr=dfsr[-c(2,3,5:8)]
+dfah=dfs[order(dfs$artist.hotness,  decreasing = TRUE),]
+dfah=dfah%>%slice(1:7)
+dfaf=dfah[order(dfah$artist.familiarity, decreasing= TRUE),]
+dfaf=dfaf[-c(2,3,5:8)]
+
+#user-collaborating based filtering
+udfs=subset(udf,genre==gen)
+udfsh=udfs[order(udfs$avg.song.ratings,  decreasing = TRUE),]
+udfsr=udfsh%>%slice(1:3)
+udfsrt=udfsr[-c(1:3,10)]
+udfsrt=t(udfsrt)
+collabsimi=data.frame(user1_2=c("0"),user1_3=c("0"),user1_4=c("0"),user2_3=c("0"),user2_4=c("0"),user3_4=c("0"))
+rownames(collabsimi)=c("Cosine_Similarity")
+var=1
+var2=1
+coll=1
+while(var<5)
+{
+  var2=var+1
+  while(var2<5)
+  {
+    numerator=(udfsrt[var,1]*udfsrt[var2,1]+udfsrt[var,2]*udfsrt[var2,2]+udfsrt[var,3]*udfsrt[var2,3])
+    denom1=sqrt((udfsrt[var,1]*udfsrt[var,1])+(udfsrt[var,2]*udfsrt[var,2])+(udfsrt[var,3]*udfsrt[var,3]))
+    denom2=sqrt((udfsrt[var2,1]*udfsrt[var2,1])+(udfsrt[var2,2]*udfsrt[var2,2])+(udfsrt[var2,3]*udfsrt[var2,3]))
+    simi=numerator/(denom1*denom2)
+    collabsimi[1,coll]=simi
+    coll=coll+1
+    var2=var2+1
+  }
+  var= var+1
+}
+collabsimi=t(collabsimi)
+collabsimi=as.data.frame(collabsimi)
+collabsimi$First_User=c(1,1,1,2,2,3)
+collabsimi$Second_User=c(2,3,4,3,4,4)
+collabsimiO=collabsimi[order(collabsimi$Cosine_Similarity, decreasing= TRUE),]
+collabsimiO=as.data.frame(collabsimiO)
+highest=collabsimiO[1,1]
+username=filter(collabsimi, collabsimi$Cosine_Similarity==highest)
+username1=username$First_User[1]
+username2=username$Second_User[1]
+playlist1=udfs[order(udfs[,username1+3], decreasing = TRUE),]
+playlist1=playlist1[-c(2,4:9)]
+playlist2=udfs[order(udfs[,username2+3], decreasing = TRUE),]
+playlist2=playlist2[-c(2,4:9)]
+
+View(dfsr) #output 1 (based on songs)
+View(dfaf) #output 2 (based on artist)
+View(playlist1)#output3 as recommended playlist to Username2 based on highest ratings of Username1
+View(playlist2)#output4 as recommended playlist to Username1 based on highest ratings of Username2
